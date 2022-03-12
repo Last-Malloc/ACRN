@@ -1,9 +1,9 @@
-
+# coding=utf-8
 import numpy as np
 from math import sqrt
 import os
 import random
-import pickle
+import cPickle as pickle
 
 '''
 calculate temporal intersection over union
@@ -33,7 +33,8 @@ class TrainingDataSet(object):
         self.context_size = 128
         print "Reading training data list from "+it_path
         cs = pickle.load(open(it_path))
-        movie_length_info = pickle.load(open("./video_allframes_info.pkl"))
+        matpoolpath = "../../../../../mnt/"
+        movie_length_info = pickle.load(open(matpoolpath + "dataset/TACoS/video_allframes_info.pkl"))
         self.clip_sentence_pairs = []
         for l in cs:
             clip_name = l[0]
@@ -64,7 +65,7 @@ class TrainingDataSet(object):
         for clip_name in sliding_clips_tmp:
             if clip_name.split(".")[2]=="npy":
                 movie_name = clip_name.split("_")[0]
-                print movie_name
+                # print movie_name
                 for clip_sentence in self.clip_sentence_pairs:
                     original_clip_name = clip_sentence[0]
                     original_movie_name = original_clip_name.split("_")[0]

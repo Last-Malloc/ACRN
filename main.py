@@ -1,14 +1,14 @@
+# coding=utf-8
 import tensorflow as tf
 import numpy as np
 import ACRN_model
 from six.moves import xrange
 import time
 from sklearn.metrics import average_precision_score
-import pickle
+import cPickle as pickle
 import vs_multilayer
 import operator
 import os
-os.environ["CUDA_VISIBLE_DEVICES"]="15"
 def dense_to_one_hot(labels_dense, num_classes):
     """Convert class labels from scalars to one-hot vectors."""
     num_labels = labels_dense.shape[0]
@@ -152,10 +152,14 @@ def run_training():
     batch_size = 30
     context_num=1
     pool_size = 16
-    train_csv_path = "./exp_data/TACoS/train_clip-sentvec.pkl"
-    test_csv_path = "./exp_data/TACoS/test_clip-sentvec.pkl"
-    test_feature_dir="./Interval128_256_overlap0.8_c3d_fc6/"
-    train_feature_dir = "./Interval64_128_256_512_overlap0.8_c3d_fc6/"
+
+    # TACoS 文本 Skip-thought 训练和测试特征
+    matpoolpath = "../../../../../mnt/"
+    train_csv_path = matpoolpath + "dataset/TACoS/TACoS/train_clip-sentvec.pkl"
+    test_csv_path = matpoolpath + "dataset/TACoS/TACoS/test_clip-sentvec.pkl"
+    # TACoS 视频 C3D 测试和训练特征
+    test_feature_dir = matpoolpath + "dataset/TACoS/Interval128_256_overlap0.8_c3d_fc6/"
+    train_feature_dir = matpoolpath + "dataset/TACoS/Interval64_128_256_512_overlap0.8_c3d_fc6/"
 
     model = ACRN_model.ACRN_Model(batch_size, pool_size, train_csv_path, test_csv_path, test_feature_dir, train_feature_dir)
     test_result_output=open("test_results.txt", "w")
@@ -177,9 +181,9 @@ def run_training():
                 # Print status to stdout.
                 print('Step %d: loss = %.3f (%.3f sec)' % (step, loss_value, duration))
 
-            if (step+1) % 10000 == 0:
+            if step+1 == max_steps:
                 print "Start to test:-----------------\n"
-                movie_length_info=pickle.load(open("./video_allframes_info.pkl"))
+                movie_length_info=pickle.load(open(matpoolpath + "dataset/TACoS/video_allframes_info.pkl"))
                 do_eval_slidingclips(sess, vs_eval_op, model, movie_length_info, step+1, test_result_output,context_num)
 
 def main(_):

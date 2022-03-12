@@ -1,3 +1,4 @@
+# coding=utf-8
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.framework import dtypes
@@ -68,9 +69,9 @@ class ACRN_Model(object):
         shape_ss=pool_ss.get_shape().as_list()
         vv=tf.reshape(pool_vv,[batch_size*batch_size,shape_vv[2],1])
         ss=tf.reshape(pool_ss,[batch_size*batch_size,1,shape_ss[2]]) #batchx batch, fea
-        concat_feature=tf.batch_matmul(vv,ss) #batch*batch, 1024*1024
+        concat_feature=tf.matmul(vv,ss) #batch*batch, 1024*1024
         concat_feature=tf.reshape(concat_feature,[batch_size,batch_size,-1])
-        comb_feature = tf.reshape(tf.concat(2, [vv_feature, ss_feature, concat_feature]),[1, batch_size, batch_size,-1 ])
+        comb_feature = tf.reshape(tf.concat([vv_feature, ss_feature, concat_feature], 2),[1, batch_size, batch_size,-1 ])
 
         return comb_feature
     '''
@@ -96,16 +97,16 @@ class ACRN_Model(object):
                print now.get_shape().as_list()
                now=tf.expand_dims(now,1)
                print now.get_shape().as_list()
-               concat_previous_feature=tf.concat(1,[concat_previous_feature,now]) # batch num embed
+               concat_previous_feature=tf.concat([concat_previous_feature,now], 1) # batch num embed
             v= tf.tanh(tf.add(transformed_clip_train,concat_previous_feature))
             relu_t=tf.tanh(transformed_sentence_train) #batch, embed
             concat_text=tf.reshape(tf.tile(relu_t,[1,2*self.context_num+1]),[self.batch_size,2*self.context_num+1,self.semantic_size]) # batch cont_num embed
             # computing weight a
-            e=tf.reduce_sum(tf.mul(concat_text,v),2) # batch cont_num
+            e=tf.reduce_sum(tf.multiply(concat_text,v),2) # batch cont_num
             alpha=tf.nn.softmax(e) # batch, num_ctx
             a=tf.reshape(tf.tile(alpha,[1,self.semantic_size]),[self.batch_size,self.semantic_size,2*self.context_num+1]) # batch 4096 cont_num
             visual_feature_train=tf.transpose(transformed_clip_train,[0,2,1]) # batch embed num
-            input_vision=tf.reduce_sum(tf.mul(visual_feature_train,a),2) #batch embed
+            input_vision=tf.reduce_sum(tf.multiply(visual_feature_train,a),2) #batch embed
 
             transformed_clip_train_norm = tf.nn.l2_normalize(input_vision, dim=1)
             transformed_sentence_train_norm = tf.nn.l2_normalize(transformed_sentence_train, dim=1)
@@ -130,18 +131,18 @@ class ACRN_Model(object):
                print now.get_shape().as_list()
                now=tf.expand_dims(now,1)
                print now.get_shape().as_list()
-               concat_previous_feature=tf.concat(1,[concat_previous_feature,now]) # batch num embed
+               concat_previous_feature=tf.concat([concat_previous_feature,now], 1) # batch num embed
             v= tf.tanh(tf.add(transformed_clip_test,concat_previous_feature)) # batchx num, embed
             relu_t=tf.tanh(transformed_sentence_test) #batch, feature_embed
 
             concat_text=tf.reshape(tf.tile(relu_t,[1,2*self.context_num+1]),[self.test_batch_size,2*self.context_num+1,self.semantic_size]) # batch cont_num feature
 
-            e=tf.reduce_sum(tf.mul(concat_text,v),2) # batch cont_num
+            e=tf.reduce_sum(tf.multiply(concat_text,v),2) # batch cont_num
 
             alpha=tf.nn.softmax(e) # batch, num_ctx
             a=tf.reshape(tf.tile(alpha,[1,self.semantic_size]),[self.test_batch_size,self.semantic_size,2*self.context_num+1]) # batch embed cont_num
             visual_feature_test=tf.transpose(transformed_clip_test,[0,2,1])
-            input_vision=tf.reduce_sum(tf.mul(visual_feature_test,a),2) #batch embed
+            input_vision=tf.reduce_sum(tf.multiply(visual_feature_test,a),2) #batch embed
             transformed_clip_test_norm = tf.nn.l2_normalize(input_vision, dim=1)
             transformed_sentence_test_norm = tf.nn.l2_normalize(transformed_sentence_test, dim=1)
             cross_modal_vec_test = self.cross_modal_comb(transformed_clip_test_norm, transformed_sentence_test_norm, self.test_batch_size)
@@ -155,7 +156,7 @@ class ACRN_Model(object):
     '''
     def compute_loss_reg(self, sim_reg_mat, offset_label):
 
-        sim_score_mat, p_reg_mat, l_reg_mat = tf.split(2, 3, sim_reg_mat)
+        sim_score_mat, p_reg_mat, l_reg_mat = tf.split(sim_reg_mat, 3, 2)
         sim_score_mat = tf.reshape(sim_score_mat, [self.batch_size, self.batch_size])
         l_reg_mat = tf.reshape(l_reg_mat, [self.batch_size, self.batch_size])
         p_reg_mat = tf.reshape(p_reg_mat, [self.batch_size, self.batch_size])
@@ -173,16 +174,16 @@ class ACRN_Model(object):
         I_half = tf.diag(tf.constant(0.5, shape=[self.batch_size]))
         batch_para_mat = tf.constant(self.alpha, shape=[self.batch_size, self.batch_size])
         para_mat = tf.add(I,batch_para_mat)
-        loss_mat = tf.log(tf.add(all1, tf.exp(tf.mul(mask_mat, sim_score_mat))))
-        loss_mat = tf.mul(loss_mat, para_mat)
+        loss_mat = tf.log(tf.add(all1, tf.exp(tf.multiply(mask_mat, sim_score_mat))))
+        loss_mat = tf.multiply(loss_mat, para_mat)
         loss_align = tf.reduce_mean(loss_mat)
         # regression loss
-        l_reg_diag = tf.matmul(tf.mul(l_reg_mat, I), tf.constant(1.0, shape=[self.batch_size, 1]))
-        p_reg_diag = tf.matmul(tf.mul(p_reg_mat, I), tf.constant(1.0, shape=[self.batch_size, 1]))
-        offset_pred = tf.concat(1, (p_reg_diag, l_reg_diag))
-        loss_reg = tf.reduce_mean(tf.abs(tf.sub(offset_pred, offset_label)))
+        l_reg_diag = tf.matmul(tf.multiply(l_reg_mat, I), tf.constant(1.0, shape=[self.batch_size, 1]))
+        p_reg_diag = tf.matmul(tf.multiply(p_reg_mat, I), tf.constant(1.0, shape=[self.batch_size, 1]))
+        offset_pred = tf.concat((p_reg_diag, l_reg_diag), 1)
+        loss_reg = tf.reduce_mean(tf.abs(tf.subtract(offset_pred, offset_label)))
 
-        loss=tf.add(tf.mul(self.lambda_regression, loss_reg), loss_align)
+        loss=tf.add(tf.multiply(self.lambda_regression, loss_reg), loss_align)
         return loss, offset_pred, loss_reg
 
 

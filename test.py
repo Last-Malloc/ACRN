@@ -1,0 +1,1 @@
+from util.cnn import fc_layer as fc
