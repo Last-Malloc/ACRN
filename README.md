@@ -1,18 +1,18 @@
 MallocLu 2022年3月13日11:42:57 自己跑的代码数据 2080ti约10h
 
-环境配置：
+使用数据集dataset/TACoS；
+片段为Sports1M上预训练的C3D模型提取特征；
+文本为English Dump of Wikipedia上预训练的Skip-thought模型提取特征；
 
+环境配置：
 Python 2.7.17, CUDA 10.0, cuDNN 7.6.4, Tensorflow-gpu 1.15.0, Keras:2.2.4, Pytorch 1.3.1, Caffe 1.0, Chainer 6.5.0, Mxnet-cu100 1.5.1.post0, Ubuntu 18.04
 
 参数设置：
-
 选取的 片段-文本 对IoU > 0.5 且 nIoL < 0.15（与原论文不同），训练集上共26963对 正样本
-
 batch_size 30
 epoch 100000 * batch_size / (训练集 片段-文本对 数)=112
 
 TACoS数据集上：
-
 | IoU  | R@10           | R@5            | R@1            |
 | ---- | -------------- | -------------- | -------------- |
 | 0.1  | 0.621846681362 | 0.486896889542 | 0.245652706343 |
